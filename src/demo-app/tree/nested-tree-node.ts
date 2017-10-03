@@ -1,5 +1,6 @@
 import {Component, Input, ChangeDetectionStrategy, ChangeDetectorRef} from '@angular/core';
-import {SelectionModel, CdkTree} from '@angular/material';
+import {CdkTree} from '@angular/material';
+import {SelectionModel} from '@angular/cdk/collections';
 import {JsonNestedNode} from './nested-data-source'
 import {Subscription} from 'rxjs/Subscription';
 

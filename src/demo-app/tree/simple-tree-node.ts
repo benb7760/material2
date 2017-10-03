@@ -1,6 +1,7 @@
 import {OnInit, Component, ChangeDetectionStrategy, AfterViewInit, OnDestroy, ChangeDetectorRef, Directive, Input, ViewChildren, ViewChild, QueryList, TemplateRef} from '@angular/core';
 import {JsonDataSource, JsonFlatNode} from './simple-data-source'
-import {CdkNodePlaceholder, SelectionModel, CdkTree, TreeControl, FlatTreeControl} from '@angular/material';
+import {CdkNodePlaceholder, CdkTree, TreeControl, FlatTreeControl} from '@angular/material';
+import {SelectionModel} from '@angular/cdk/collections';
 import {Subscription} from 'rxjs/Subscription';
 
 

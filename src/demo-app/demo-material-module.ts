@@ -30,6 +30,7 @@ import {
   MatToolbarModule,
   MatTooltipModule,
   MatStepperModule,
+  CdkTreeModule
 } from '@angular/material';
 import {MatNativeDateModule, MatRippleModule} from '@angular/material';
 import {CdkTableModule} from '@angular/cdk/table';
@@ -84,6 +85,7 @@ import {PortalModule} from '@angular/cdk/portal';
     OverlayModule,
     PlatformModule,
     PortalModule,
+    CdkTreeModule
   ]
 })
 export class DemoMaterialModule {}

@@ -47,6 +47,10 @@ import {TooltipDemo} from '../tooltip/tooltip-demo';
 import {TypographyDemo} from '../typography/typography-demo';
 import {DemoApp, Home} from './demo-app';
 import {DEMO_APP_ROUTES} from './routes';
+import {SimpleTreeDemo} from '../tree/simple-tree-demo';
+import {SimpleTreeNode} from '../tree/simple-tree-node';
+import {NestedTreeDemo} from '../tree/nested-tree-demo';
+import {NestedTreeNode} from '../tree/nested-tree-node';
 
 @NgModule({
   imports: [
@@ -109,6 +113,10 @@ import {DEMO_APP_ROUTES} from './routes';
     ToolbarDemo,
     TooltipDemo,
     TypographyDemo,
+    SimpleTreeDemo,
+    NestedTreeDemo,
+    SimpleTreeNode,
+    NestedTreeNode,
   ],
   providers: [
     {provide: OverlayContainer, useClass: FullscreenOverlayContainer},

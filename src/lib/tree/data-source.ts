@@ -1,6 +1,5 @@
 import {Observable} from 'rxjs/Observable';
-import {SelectionModel} from '../core';
-import {CollectionViewer} from '../core/data-table';
+import {SelectionModel, CollectionViewer} from '@angular/cdk/collections';
 import {FlatNode, NestedNode} from './tree-node';
 
 
@@ -16,4 +15,3 @@ export interface TreeDataSource<T extends Object> {
   /** Connect the data source with the tree component */
   connect(collectionViewer: CollectionViewer): Observable<FlatNode[] | NestedNode[]>;
 }
-

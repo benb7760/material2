@@ -1,4 +1,5 @@
-import {CollectionViewer, TreeDataSource, TreeAdapter, FlatTreeControl, TreeControl, FlatNode, NestedNode, SelectionModel} from '@angular/material';
+import {TreeDataSource, TreeAdapter, FlatTreeControl, TreeControl, FlatNode, NestedNode} from '@angular/material';
+import {CollectionViewer, SelectionModel} from '@angular/cdk/collections';
 import {Observable} from 'rxjs/Observable';
 import {combineLatest} from 'rxjs/observable/combineLatest';
 import {BehaviorSubject} from 'rxjs/BehaviorSubject';

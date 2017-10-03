@@ -1,6 +1,6 @@
 import {BehaviorSubject} from 'rxjs/BehaviorSubject';
 import {QueryList} from '@angular/core';
-import {SelectionModel} from '../core';
+import {SelectionModel} from '@angular/cdk/collections';
 import {FlatNode, NestedNode} from './tree-node';
 
 /**

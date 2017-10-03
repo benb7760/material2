@@ -76,9 +76,8 @@ export class DemoApp {
     {name: 'Stepper', route: '/stepper'},
     {name: 'Table', route: '/table'},
     {name: 'Tabs', route: '/tabs'},
-    {name: 'Typography', route: 'typography'},
-    {name: 'Tree', route: 'simple-tree'},
-    {name: 'Nested tree', route: 'nested-tree'},
+    {name: 'Tree', route: '/simple-tree'},
+    {name: 'Nested tree', route: '/nested-tree'},
     {name: 'Toolbar', route: '/toolbar'},
     {name: 'Tooltip', route: '/tooltip'},
     {name: 'Typography', route: '/typography'}

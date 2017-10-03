@@ -1,9 +1,6 @@
 import {Observable} from 'rxjs/Observable';
+import {CollectionViewer} from '@angular/cdk/collections';
 
-
-export interface CollectionViewer {
-  viewChanged: Observable<{start: number, end: number}>;
-}
 
 export interface CdkTreeContext {
   $implicit: any;

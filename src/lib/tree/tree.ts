@@ -28,13 +28,14 @@ import {
 import {BehaviorSubject} from 'rxjs/BehaviorSubject';
 import {TreeDataSource, TreeAdapter} from './data-source';
 import {TreeControl} from './tree-control';
-import {SelectionModel, UP_ARROW, DOWN_ARROW, RIGHT_ARROW, LEFT_ARROW, HOME, ENTER, ESCAPE, FocusOriginMonitor} from '../core';
-import {FocusKeyManager, Focusable} from '../core/a11y/focus-key-manager';
-import {CollectionViewer} from '../core/data-table';
+import {SelectionModel} from '@angular/cdk/collections';
+import {UP_ARROW, DOWN_ARROW, RIGHT_ARROW, LEFT_ARROW, HOME, ENTER, ESCAPE} from '@angular/cdk/keycodes';
+import {FocusMonitor, FocusKeyManager, FocusableOption} from '@angular/cdk/a11y';
+import {CollectionViewer} from '@angular/cdk/collections';
 import {NestedNode, FlatNode} from './tree-node';
 import {Subscription} from 'rxjs/Subscription';
 import {fromEvent} from 'rxjs/observable/fromEvent';
-import {RxChain, debounceTime} from '../core/rxjs/index';
+import {RxChain, debounceTime} from '@angular/cdk/rxjs';
 import {combineLatest} from 'rxjs/observable/combineLatest';
 
 /** Height of each row in pixels (48 + 1px border) */
@@ -65,7 +66,7 @@ export class CdkNodeDef {
     'tabindex': '0',
   }
 })
-export class CdkNode  implements Focusable, OnDestroy {
+export class CdkNode  implements FocusableOption, OnDestroy {
   @Input('cdkNode')
   set data(v: any) {
     this._data = v;
@@ -97,7 +98,7 @@ export class CdkNode  implements Focusable, OnDestroy {
   constructor(private elementRef: ElementRef,
               private renderer: Renderer2,
               public tree: CdkTree,
-              private _focusOriginMonitor: FocusOriginMonitor) {
+              private _focusOriginMonitor: FocusMonitor) {
     this.renderer.addClass(elementRef.nativeElement, 'mat-data');
     this._focusOriginMonitor.monitor(this.elementRef.nativeElement, this.renderer, true);
   }
@@ -290,7 +291,7 @@ export class CdkTree implements CollectionViewer, AfterViewInit, OnInit {
   private _dataDiffer: IterableDiffer<any>;
 
   // Focus related
-  _keyManager: FocusKeyManager;
+  _keyManager: FocusKeyManager<CdkNode>;
 
   orderedNodes: QueryList<CdkNode> = new QueryList<CdkNode>();
 

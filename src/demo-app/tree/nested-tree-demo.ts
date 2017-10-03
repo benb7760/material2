@@ -1,6 +1,7 @@
 import {Component, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, AfterViewInit, OnDestroy, ViewChild} from '@angular/core';
 import {JsonNestedDataSource, JsonNode, JsonNestedNode} from './nested-data-source';
-import {SelectionModel, TreeControl, NestedTreeControl, CdkTree} from '@angular/material';
+import {TreeControl, NestedTreeControl, CdkTree} from '@angular/material';
+import {CollectionViewer, SelectionModel} from '@angular/cdk/collections';
 import {jsonExample} from './sample-json';
 import {Subscription} from 'rxjs/Subscription';
 
