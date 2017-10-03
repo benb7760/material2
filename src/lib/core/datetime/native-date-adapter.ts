@@ -6,8 +6,9 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {DateAdapter} from './date-adapter';
-
+import {Inject, Injectable, Optional} from '@angular/core';
+import {DateAdapter, MAT_DATE_LOCALE} from './date-adapter';
+import {extendObject} from '../util/object-extend';
 
 // TODO(mmalerba): Remove when we no longer support safari 9.
 /** Whether the browser supports the Intl API. */
@@ -37,6 +38,15 @@ const DEFAULT_DAY_OF_WEEK_NAMES = {
 };
 
 
+/**
+ * Matches strings that have the form of a valid RFC 3339 string
+ * (https://tools.ietf.org/html/rfc3339). Note that the string may not actually be a valid date
+ * because the regex will match strings an with out of bounds month, date, etc.
+ */
+const ISO_8601_REGEX =
+    /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|(?:(?:\+|-)\d{2}:\d{2}))?)?$/;
+
+
 /** Creates an array and fills it with values. */
 function range<T>(length: number, valueFunction: (index: number) => T): T[] {
   const valuesArray = Array(length);
@@ -46,9 +56,22 @@ function range<T>(length: number, valueFunction: (index: number) => T): T[] {
   return valuesArray;
 }
 
-
 /** Adapts the native JS Date for use with cdk-based components that work with dates. */
+@Injectable()
 export class NativeDateAdapter extends DateAdapter<Date> {
+  constructor(@Optional() @Inject(MAT_DATE_LOCALE) matDateLocale: string) {
+    super();
+    super.setLocale(matDateLocale);
+  }
+
+  /**
+   * Whether to use `timeZone: 'utc'` with `Intl.DateTimeFormat` when formatting dates.
+   * Without this `Intl.DateTimeFormat` sometimes chooses the wrong timeZone, which can throw off
+   * the result. (e.g. in the en-US locale `new Date(1800, 7, 14).toLocaleDateString()`
+   * will produce `'8/13/1800'`.
+   */
+  useUtcForDisplay = true;
+
   getYear(date: Date): number {
     return date.getFullYear();
   }
@@ -141,12 +164,23 @@ export class NativeDateAdapter extends DateAdapter<Date> {
   parse(value: any): Date | null {
     // We have no way using the native JS Date to set the parse format or locale, so we ignore these
     // parameters.
-    let timestamp = typeof value == 'number' ? value : Date.parse(value);
-    return isNaN(timestamp) ? null : new Date(timestamp);
+    if (typeof value == 'number') {
+      return new Date(value);
+    }
+    return value ? new Date(Date.parse(value)) : null;
   }
 
   format(date: Date, displayFormat: Object): string {
+    if (!this.isValid(date)) {
+      throw Error('NativeDateAdapter: Cannot format invalid date.');
+    }
     if (SUPPORTS_INTL_API) {
+      if (this.useUtcForDisplay) {
+        date = new Date(Date.UTC(
+            date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(),
+            date.getMinutes(), date.getSeconds(), date.getMilliseconds()));
+        displayFormat = extendObject({}, displayFormat, {timeZone: 'utc'});
+      }
       let dtf = new Intl.DateTimeFormat(this.locale, displayFormat);
       return this._stripDirectionalityCharacters(dtf.format(date));
     }
@@ -177,12 +211,32 @@ export class NativeDateAdapter extends DateAdapter<Date> {
         this.getYear(date), this.getMonth(date), this.getDate(date) + days);
   }
 
-  getISODateString(date: Date): string {
+  toIso8601(date: Date): string {
     return [
       date.getUTCFullYear(),
       this._2digit(date.getUTCMonth() + 1),
       this._2digit(date.getUTCDate())
     ].join('-');
+  }
+
+  fromIso8601(iso8601String: string): Date | null {
+    // The `Date` constructor accepts formats other than ISO 8601, so we need to make sure the
+    // string is the right format first.
+    if (ISO_8601_REGEX.test(iso8601String)) {
+      let d = new Date(iso8601String);
+      if (this.isValid(d)) {
+        return d;
+      }
+    }
+    return null;
+  }
+
+  isDateInstance(obj: any) {
+    return obj instanceof Date;
+  }
+
+  isValid(date: Date) {
+    return !isNaN(date.getTime());
   }
 
   /** Creates a date but allows the month and date to overflow. */

@@ -7,33 +7,54 @@
  */
 
 import {
-  ViewChild,
+  AfterContentChecked,
+  AfterContentInit,
+  AfterViewChecked,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
-  Input,
-  Output,
-  EventEmitter,
-  QueryList,
   ContentChildren,
   ElementRef,
+  EventEmitter,
+  Input,
+  OnDestroy,
+  Output,
+  QueryList,
   Renderer2,
+  ViewChild,
+  ViewEncapsulation,
 } from '@angular/core';
-import {coerceBooleanProperty} from '../core';
-import {Observable} from 'rxjs/Observable';
-import {MdTab} from './tab';
-import {map} from '../core/rxjs/index';
+import {coerceBooleanProperty} from '@angular/cdk/coercion';
+import {Subscription} from 'rxjs/Subscription';
+import {MatTab} from './tab';
+import {merge} from 'rxjs/observable/merge';
+import {
+  CanColor,
+  CanDisableRipple,
+  mixinColor,
+  mixinDisableRipple,
+  ThemePalette
+} from '@angular/material/core';
 
 
 /** Used to generate unique ID's for each tab component */
 let nextId = 0;
 
 /** A simple change event emitted on focus or selection changes. */
-export class MdTabChangeEvent {
+export class MatTabChangeEvent {
   index: number;
-  tab: MdTab;
+  tab: MatTab;
 }
 
 /** Possible positions for the tab header. */
-export type MdTabHeaderPosition = 'above' | 'below';
+export type MatTabHeaderPosition = 'above' | 'below';
+
+// Boilerplate for applying mixins to MatTabGroup.
+/** @docs-private */
+export class MatTabGroupBase {
+  constructor(public _renderer: Renderer2, public _elementRef: ElementRef) {}
+}
+export const _MatTabGroupMixinBase = mixinColor(mixinDisableRipple(MatTabGroupBase), 'primary');
 
 /**
  * Material design tab-group component.  Supports basic tab pairs (label + content) and includes
@@ -42,17 +63,23 @@ export type MdTabHeaderPosition = 'above' | 'below';
  */
 @Component({
   moduleId: module.id,
-  selector: 'md-tab-group, mat-tab-group',
+  selector: 'mat-tab-group',
   templateUrl: 'tab-group.html',
   styleUrls: ['tab-group.css'],
+  encapsulation: ViewEncapsulation.None,
+  preserveWhitespaces: false,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  inputs: ['color', 'disableRipple'],
   host: {
     'class': 'mat-tab-group',
     '[class.mat-tab-group-dynamic-height]': 'dynamicHeight',
     '[class.mat-tab-group-inverted-header]': 'headerPosition === "below"',
-  }
+  },
 })
-export class MdTabGroup {
-  @ContentChildren(MdTab) _tabs: QueryList<MdTab>;
+export class MatTabGroup extends _MatTabGroupMixinBase implements AfterContentInit,
+    AfterContentChecked, AfterViewChecked, OnDestroy, CanColor, CanDisableRipple {
+
+  @ContentChildren(MatTab) _tabs: QueryList<MatTab>;
 
   @ViewChild('tabBodyWrapper') _tabBodyWrapper: ElementRef;
 
@@ -65,6 +92,12 @@ export class MdTabGroup {
   /** Snapshot of the height of the tab body wrapper before another tab is activated. */
   private _tabBodyWrapperHeight: number = 0;
 
+  /** Subscription to tabs being added/removed. */
+  private _tabsSubscription = Subscription.EMPTY;
+
+  /** Subscription to changes in the tab labels. */
+  private _tabLabelSubscription = Subscription.EMPTY;
+
   /** Whether the tab group should grow to the size of the active tab. */
   @Input()
   get dynamicHeight(): boolean { return this._dynamicHeight; }
@@ -72,42 +105,51 @@ export class MdTabGroup {
   private _dynamicHeight: boolean = false;
 
   /** @deprecated */
-  @Input('md-dynamic-height')
+  @Input('mat-dynamic-height')
   get _dynamicHeightDeprecated(): boolean { return this._dynamicHeight; }
   set _dynamicHeightDeprecated(value: boolean) { this._dynamicHeight = value; }
-
-  /** Whether ripples for the tab-group should be disabled or not. */
-  @Input()
-  get disableRipple(): boolean { return this._disableRipple; }
-  set disableRipple(value) { this._disableRipple = coerceBooleanProperty(value); }
-  private _disableRipple: boolean = false;
-
-
-  private _selectedIndex: number | null = null;
 
   /** The index of the active tab. */
   @Input()
   set selectedIndex(value: number | null) { this._indexToSelect = value; }
   get selectedIndex(): number | null { return this._selectedIndex; }
+  private _selectedIndex: number | null = null;
 
   /** Position of the tab header. */
+  @Input() headerPosition: MatTabHeaderPosition = 'above';
+
+  /** Background color of the tab group. */
   @Input()
-  headerPosition: MdTabHeaderPosition = 'above';
+  get backgroundColor(): ThemePalette { return this._backgroundColor; }
+  set backgroundColor(value: ThemePalette) {
+    let nativeElement = this._elementRef.nativeElement;
+
+    this._renderer.removeClass(nativeElement, `mat-background-${this.backgroundColor}`);
+
+    if (value) {
+      this._renderer.addClass(nativeElement, `mat-background-${value}`);
+    }
+
+    this._backgroundColor = value;
+  }
+  private _backgroundColor: ThemePalette;
 
   /** Output to enable support for two-way binding on `[(selectedIndex)]` */
-  @Output() get selectedIndexChange(): Observable<number> {
-    return map.call(this.selectChange, event => event.index);
-  }
+  @Output() selectedIndexChange: EventEmitter<number> = new EventEmitter();
 
   /** Event emitted when focus has changed within a tab group. */
-  @Output() focusChange: EventEmitter<MdTabChangeEvent> = new EventEmitter<MdTabChangeEvent>();
+  @Output() focusChange: EventEmitter<MatTabChangeEvent> = new EventEmitter<MatTabChangeEvent>();
 
   /** Event emitted when the tab selection has changed. */
-  @Output() selectChange: EventEmitter<MdTabChangeEvent> = new EventEmitter<MdTabChangeEvent>(true);
+  @Output() selectChange: EventEmitter<MatTabChangeEvent> =
+      new EventEmitter<MatTabChangeEvent>(true);
 
   private _groupId: number;
 
-  constructor(private _renderer: Renderer2) {
+  constructor(_renderer: Renderer2,
+              elementRef: ElementRef,
+              private _changeDetectorRef: ChangeDetectorRef) {
+    super(_renderer, elementRef);
     this._groupId = nextId++;
   }
 
@@ -118,9 +160,10 @@ export class MdTabGroup {
    * a new selected tab should transition in (from the left or right).
    */
   ngAfterContentChecked(): void {
-    // Clamp the next selected index to the bounds of 0 and the tabs length. Note the `|| 0`, which
-    // ensures that values like NaN can't get through and which would otherwise throw the
-    // component into an infinite loop (since Math.max(NaN, 0) === NaN).
+    // Clamp the next selected index to the boundsof 0 and the tabs length.
+    // Note the `|| 0`, which ensures that values like NaN can't get through
+    // and which would otherwise throw the component into an infinite loop
+    // (since Math.max(NaN, 0) === NaN).
     let indexToSelect = this._indexToSelect =
         Math.min(this._tabs.length - 1, Math.max(this._indexToSelect || 0, 0));
 
@@ -128,11 +171,15 @@ export class MdTabGroup {
     // the selected index has not yet been initialized.
     if (this._selectedIndex != indexToSelect && this._selectedIndex != null) {
       this.selectChange.emit(this._createChangeEvent(indexToSelect));
+      // Emitting this value after change detection has run
+      // since the checked content may contain this variable'
+      Promise.resolve().then(() => this.selectedIndexChange.emit(indexToSelect));
     }
 
     // Setup the position for each tab and optionally setup an origin on the next selected tab.
-    this._tabs.forEach((tab: MdTab, index: number) => {
+    this._tabs.forEach((tab: MatTab, index: number) => {
       tab.position = index - indexToSelect;
+      tab.isActive = index === indexToSelect;
 
       // If there is already a selected tab, then set up an origin for the next selected tab
       // if it doesn't have one already.
@@ -141,7 +188,26 @@ export class MdTabGroup {
       }
     });
 
-    this._selectedIndex = indexToSelect;
+    if (this._selectedIndex !== indexToSelect) {
+      this._selectedIndex = indexToSelect;
+      this._changeDetectorRef.markForCheck();
+    }
+  }
+
+  ngAfterContentInit() {
+    this._subscribeToTabLabels();
+
+    // Subscribe to changes in the amount of tabs, in order to be
+    // able to re-render the content as new tabs are added or removed.
+    this._tabsSubscription = this._tabs.changes.subscribe(() => {
+      this._subscribeToTabLabels();
+      this._changeDetectorRef.markForCheck();
+    });
+  }
+
+  ngOnDestroy() {
+    this._tabsSubscription.unsubscribe();
+    this._tabLabelSubscription.unsubscribe();
   }
 
   /**
@@ -156,8 +222,8 @@ export class MdTabGroup {
     this.focusChange.emit(this._createChangeEvent(index));
   }
 
-  private _createChangeEvent(index: number): MdTabChangeEvent {
-    const event = new MdTabChangeEvent;
+  private _createChangeEvent(index: number): MatTabChangeEvent {
+    const event = new MatTabChangeEvent;
     event.index = index;
     if (this._tabs && this._tabs.length) {
       event.tab = this._tabs.toArray()[index];
@@ -165,14 +231,32 @@ export class MdTabGroup {
     return event;
   }
 
+  /**
+   * Subscribes to changes in the tab labels. This is needed, because the @Input for the label is
+   * on the MatTab component, whereas the data binding is inside the MatTabGroup. In order for the
+   * binding to be updated, we need to subscribe to changes in it and trigger change detection
+   * manually.
+   */
+  private _subscribeToTabLabels() {
+    if (this._tabLabelSubscription) {
+      this._tabLabelSubscription.unsubscribe();
+    }
+
+    this._tabLabelSubscription = merge(
+        ...this._tabs.map(tab => tab._disableChange),
+        ...this._tabs.map(tab => tab._labelChange)).subscribe(() => {
+      this._changeDetectorRef.markForCheck();
+    });
+  }
+
   /** Returns a unique id for each tab label element */
   _getTabLabelId(i: number): string {
-    return `md-tab-label-${this._groupId}-${i}`;
+    return `mat-tab-label-${this._groupId}-${i}`;
   }
 
   /** Returns a unique id for each tab content element */
   _getTabContentId(i: number): string {
-    return `md-tab-content-${this._groupId}-${i}`;
+    return `mat-tab-content-${this._groupId}-${i}`;
   }
 
   /**

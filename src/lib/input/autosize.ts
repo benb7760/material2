@@ -6,32 +6,30 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Directive, ElementRef, Input, AfterViewInit, Optional, Self} from '@angular/core';
-import {NgControl} from '@angular/forms';
+import {Directive, ElementRef, Input, AfterViewInit, DoCheck} from '@angular/core';
+import {Platform} from '@angular/cdk/platform';
 
 
 /**
  * Directive to automatically resize a textarea to fit its content.
  */
 @Directive({
-  selector: 'textarea[md-autosize], textarea[mdTextareaAutosize],' +
-            'textarea[mat-autosize], textarea[matTextareaAutosize]',
-  exportAs: 'mdTextareaAutosize',
+  selector: `textarea[mat-autosize], textarea[matTextareaAutosize]`,
+  exportAs: 'matTextareaAutosize',
   host: {
-    '(input)': 'resizeToFitContent()',
     // Textarea elements that have the directive applied should have a single row by default.
     // Browsers normally show two rows by default and therefore this limits the minRows binding.
     'rows': '1',
   },
 })
-export class MdTextareaAutosize implements AfterViewInit {
+export class MatTextareaAutosize implements AfterViewInit, DoCheck {
   /** Keep track of the previous textarea value to avoid resizing when the value hasn't changed. */
   private _previousValue: string;
 
   private _minRows: number;
   private _maxRows: number;
 
-  @Input('mdAutosizeMinRows')
+  @Input('matAutosizeMinRows')
   get minRows() { return this._minRows; }
 
   set minRows(value: number) {
@@ -39,29 +37,17 @@ export class MdTextareaAutosize implements AfterViewInit {
     this._setMinHeight();
   }
 
-  @Input('mdAutosizeMaxRows')
+  @Input('matAutosizeMaxRows')
   get maxRows() { return this._maxRows; }
   set maxRows(value: number) {
     this._maxRows = value;
     this._setMaxHeight();
   }
 
-  @Input('matAutosizeMaxRows')
-  get _matAutosizeMinRows() { return this.minRows; }
-  set _matAutosizeMinRows(v) { this.minRows = v; }
-
-  @Input('matAutosizeMaxRows')
-  get _matAutosizeMaxRows() { return this.maxRows; }
-  set _matAutosizeMaxRows(v) { this.maxRows = v; }
-
   /** Cached height of a textarea with a single row. */
   private _cachedLineHeight: number;
 
-  constructor(private _elementRef: ElementRef, @Optional() @Self() formControl: NgControl) {
-    if (formControl && formControl.valueChanges) {
-      formControl.valueChanges.subscribe(() => this.resizeToFitContent());
-    }
-  }
+  constructor(private _elementRef: ElementRef, private _platform: Platform) {}
 
   /** Sets the minimum height of the textarea as determined by minRows. */
   _setMinHeight(): void {
@@ -84,8 +70,10 @@ export class MdTextareaAutosize implements AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this._cacheTextareaLineHeight();
-    this.resizeToFitContent();
+    if (this._platform.isBrowser) {
+      this._cacheTextareaLineHeight();
+      this.resizeToFitContent();
+    }
   }
 
   /** Sets a style property on the textarea element. */
@@ -119,6 +107,13 @@ export class MdTextareaAutosize implements AfterViewInit {
     textareaClone.style.minHeight = '';
     textareaClone.style.maxHeight = '';
 
+    // In Firefox it happens that textarea elements are always bigger than the specified amount
+    // of rows. This is because Firefox tries to add extra space for the horizontal scrollbar.
+    // As a workaround that removes the extra space for the scrollbar, we can just set overflow
+    // to hidden. This ensures that there is no invalid calculation of the line height.
+    // See Firefox bug report: https://bugzilla.mozilla.org/show_bug.cgi?id=33654
+    textareaClone.style.overflow = 'hidden';
+
     textarea.parentNode!.appendChild(textareaClone);
     this._cachedLineHeight = textareaClone.clientHeight;
     textarea.parentNode!.removeChild(textareaClone);
@@ -128,19 +123,29 @@ export class MdTextareaAutosize implements AfterViewInit {
     this._setMaxHeight();
   }
 
+  ngDoCheck() {
+    this.resizeToFitContent();
+  }
+
   /** Resize the textarea to fit its content. */
   resizeToFitContent() {
     const textarea = this._elementRef.nativeElement as HTMLTextAreaElement;
-    if (textarea.value === this._previousValue) {
+    const value = textarea.value;
+
+    // Only resize of the value changed since these calculations can be expensive.
+    if (value === this._previousValue) {
       return;
     }
 
     // Reset the textarea height to auto in order to shrink back to its default size.
+    // Also temporarily force overflow:hidden, so scroll bars do not interfere with calculations.
     textarea.style.height = 'auto';
+    textarea.style.overflow = 'hidden';
 
     // Use the scrollHeight to know how large the textarea *would* be if fit its entire value.
     textarea.style.height = `${textarea.scrollHeight}px`;
+    textarea.style.overflow = '';
 
-    this._previousValue = textarea.value;
+    this._previousValue = value;
   }
 }

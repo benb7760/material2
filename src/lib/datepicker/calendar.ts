@@ -7,19 +7,6 @@
  */
 
 import {
-  AfterContentInit,
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  EventEmitter,
-  Inject,
-  Input,
-  NgZone,
-  Optional,
-  Output,
-  ViewEncapsulation
-} from '@angular/core';
-import {
   DOWN_ARROW,
   END,
   ENTER,
@@ -28,14 +15,34 @@ import {
   PAGE_DOWN,
   PAGE_UP,
   RIGHT_ARROW,
-  UP_ARROW
-} from '../core/keyboard/keycodes';
-import {DateAdapter} from '../core/datetime/index';
-import {MdDatepickerIntl} from './datepicker-intl';
+  UP_ARROW,
+} from '@angular/cdk/keycodes';
+import {
+  AfterContentInit,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Inject,
+  Input,
+  NgZone,
+  OnDestroy,
+  Optional,
+  Output,
+  ViewEncapsulation,
+  ViewChild,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
+import {DateAdapter, MAT_DATE_FORMATS, MatDateFormats} from '@angular/material/core';
+import {first} from 'rxjs/operator/first';
+import {Subscription} from 'rxjs/Subscription';
+import {coerceDateProperty} from './coerce-date-property';
 import {createMissingDateImplError} from './datepicker-errors';
-import {MD_DATE_FORMATS, MdDateFormats} from '../core/datetime/date-formats';
-import {MATERIAL_COMPATIBILITY_MODE} from '../core';
-import {first} from '../core/rxjs/index';
+import {MatDatepickerIntl} from './datepicker-intl';
+import {MatMonthView} from './month-view';
+import {MatYearView} from './year-view';
 
 
 /**
@@ -44,36 +51,60 @@ import {first} from '../core/rxjs/index';
  */
 @Component({
   moduleId: module.id,
-  selector: 'md-calendar',
+  selector: 'mat-calendar',
   templateUrl: 'calendar.html',
   styleUrls: ['calendar.css'],
   host: {
     'class': 'mat-calendar',
   },
   encapsulation: ViewEncapsulation.None,
+  preserveWhitespaces: false,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MdCalendar<D> implements AfterContentInit {
+export class MatCalendar<D> implements AfterContentInit, OnDestroy, OnChanges {
+  private _intlChanges: Subscription;
+
   /** A date representing the period (month or year) to start the calendar in. */
-  @Input() startAt: D;
+  @Input()
+  get startAt(): D | null { return this._startAt; }
+  set startAt(value: D | null) { this._startAt = coerceDateProperty(this._dateAdapter, value); }
+  private _startAt: D | null;
 
   /** Whether the calendar should be started in month or year view. */
   @Input() startView: 'month' | 'year' = 'month';
 
   /** The currently selected date. */
-  @Input() selected: D;
+  @Input()
+  get selected(): D | null { return this._selected; }
+  set selected(value: D | null) { this._selected = coerceDateProperty(this._dateAdapter, value); }
+  private _selected: D | null;
 
   /** The minimum selectable date. */
-  @Input() minDate: D;
+  @Input()
+  get minDate(): D | null { return this._minDate; }
+  set minDate(value: D | null) { this._minDate = coerceDateProperty(this._dateAdapter, value); }
+  private _minDate: D | null;
 
   /** The maximum selectable date. */
-  @Input() maxDate: D;
+  @Input()
+  get maxDate(): D | null { return this._maxDate; }
+  set maxDate(value: D | null) { this._maxDate = coerceDateProperty(this._dateAdapter, value); }
+  private _maxDate: D | null;
 
   /** A function used to filter which dates are selectable. */
   @Input() dateFilter: (date: D) => boolean;
 
   /** Emits when the currently selected date changes. */
   @Output() selectedChange = new EventEmitter<D>();
+
+  /** Emits when any date is selected. */
+  @Output() userSelection = new EventEmitter<void>();
+
+  /** Reference to the current month view component. */
+  @ViewChild(MatMonthView) monthView: MatMonthView<D>;
+
+  /** Reference to the current year view component. */
+  @ViewChild(MatYearView) yearView: MatYearView<D>;
 
   /** Date filter for the month and year views. */
   _dateFilterForViews = (date: D) => {
@@ -119,17 +150,21 @@ export class MdCalendar<D> implements AfterContentInit {
   }
 
   constructor(private _elementRef: ElementRef,
-              private _intl: MdDatepickerIntl,
+              private _intl: MatDatepickerIntl,
               private _ngZone: NgZone,
-              @Optional() @Inject(MATERIAL_COMPATIBILITY_MODE) public _isCompatibilityMode: boolean,
               @Optional() private _dateAdapter: DateAdapter<D>,
-              @Optional() @Inject(MD_DATE_FORMATS) private _dateFormats: MdDateFormats) {
+              @Optional() @Inject(MAT_DATE_FORMATS) private _dateFormats: MatDateFormats,
+              changeDetectorRef: ChangeDetectorRef) {
+
     if (!this._dateAdapter) {
       throw createMissingDateImplError('DateAdapter');
     }
+
     if (!this._dateFormats) {
-      throw createMissingDateImplError('MD_DATE_FORMATS');
+      throw createMissingDateImplError('MAT_DATE_FORMATS');
     }
+
+    this._intlChanges = _intl.changes.subscribe(() => changeDetectorRef.markForCheck());
   }
 
   ngAfterContentInit() {
@@ -138,11 +173,31 @@ export class MdCalendar<D> implements AfterContentInit {
     this._monthView = this.startView != 'year';
   }
 
+  ngOnDestroy() {
+    this._intlChanges.unsubscribe();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    const change = changes.minDate || changes.maxDate || changes.dateFilter;
+
+    if (change && !change.firstChange) {
+      const view = this.monthView || this.yearView;
+
+      if (view) {
+        view._init();
+      }
+    }
+  }
+
   /** Handles date selection in the month view. */
   _dateSelected(date: D): void {
     if (!this._dateAdapter.sameDate(date, this.selected)) {
       this.selectedChange.emit(date);
     }
+  }
+
+  _userSelected(): void {
+    this.userSelection.emit();
   }
 
   /** Handles month selection in the year view. */
@@ -197,9 +252,11 @@ export class MdCalendar<D> implements AfterContentInit {
 
   /** Focuses the active cell after the microtask queue is empty. */
   _focusActiveCell() {
-    this._ngZone.runOutsideAngular(() => first.call(this._ngZone.onStable).subscribe(() => {
-      this._elementRef.nativeElement.querySelector('.mat-calendar-body-active').focus();
-    }));
+    this._ngZone.runOutsideAngular(() => {
+      first.call(this._ngZone.onStable.asObservable()).subscribe(() => {
+        this._elementRef.nativeElement.querySelector('.mat-calendar-body-active').focus();
+      });
+    });
   }
 
   /** Whether the two dates represent the same view in the current view mode (month or year). */

@@ -7,10 +7,10 @@
  */
 
 import {Directive, Input} from '@angular/core';
-import {coerceBooleanProperty} from '@angular/cdk';
+import {coerceBooleanProperty} from '@angular/cdk/coercion';
 
-/** MdAccordion's display modes. */
-export type MdAccordionDisplayMode = 'default' | 'flat';
+/** MatAccordion's display modes. */
+export type MatAccordionDisplayMode = 'default' | 'flat';
 
 /** Unique ID counter */
 let nextId = 0;
@@ -19,7 +19,7 @@ let nextId = 0;
  * Directive whose purpose is to manage the expanded state of CdkAccordionItem children.
  */
 @Directive({
-  selector: '[cdk-accordion]',
+  selector: 'cdk-accordion, [cdk-accordion]',
 })
 export class CdkAccordion {
   /** A readonly id value to use for unique selection coordination. */
@@ -43,16 +43,16 @@ export class CdkAccordion {
    *  flat - no spacing is placed around expanded panels, showing all panels at the same
    *     elevation.
    */
-  @Input() displayMode: MdAccordionDisplayMode = 'default';
+  @Input() displayMode: MatAccordionDisplayMode = 'default';
 }
 
 /**
  * Directive for a Material Design Accordion.
  */
 @Directive({
-  selector: 'mat-accordion, md-accordion',
+  selector: 'mat-accordion',
   host: {
     class: 'mat-accordion'
   }
 })
-export class MdAccordion extends CdkAccordion {}
+export class MatAccordion extends CdkAccordion {}

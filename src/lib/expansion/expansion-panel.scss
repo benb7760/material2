@@ -3,12 +3,11 @@
 
 .mat-expansion-panel {
   @include mat-elevation-transition;
+  @include mat-overridable-elevation(2);
   box-sizing: content-box;
   display: block;
-
-  &:not([class*='mat-elevation-z']) {
-    @include mat-elevation(2);
-  }
+  margin: 0;
+  transition: margin 225ms $mat-fast-out-slow-in-timing-function;
 }
 
 .mat-expansion-panel-content {
@@ -16,7 +15,20 @@
 }
 
 .mat-expansion-panel-body {
-  padding: 0 24px 16px;
+  margin: 0 24px 16px;
+  overflow: auto;
+}
+
+.mat-expansion-panel-spacing {
+  margin: 16px 0;
+
+  .mat-accordion &:first-child {
+    margin-top: 0;
+  }
+
+  .mat-accordion &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .mat-action-row {
@@ -29,5 +41,10 @@
 
   button.mat-button {
     margin-left: 8px;
+
+    [dir='rtl'] & {
+      margin-left: 0;
+      margin-right: 8px;
+    }
   }
 }

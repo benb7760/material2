@@ -1,40 +1,40 @@
-import {async, ComponentFixture, TestBed} from '@angular/core/testing';
-import {MdPaginatorModule} from './index';
-import {MdPaginator, PageEvent} from './paginator';
-import {Component, ElementRef, ViewChild} from '@angular/core';
-import {MdPaginatorIntl} from './paginator-intl';
+import {async, ComponentFixture, TestBed, inject} from '@angular/core/testing';
+import {MatPaginatorModule} from './index';
+import {MatPaginator, PageEvent} from './paginator';
+import {Component, ViewChild} from '@angular/core';
+import {MatPaginatorIntl} from './paginator-intl';
 import {NoopAnimationsModule} from '@angular/platform-browser/animations';
-import {customMatchers} from '../core/testing/jasmine-matchers';
-import {dispatchMouseEvent} from '../core/testing/dispatch-events';
+import {dispatchMouseEvent} from '@angular/cdk/testing';
 
 
-describe('MdPaginator', () => {
-  let fixture: ComponentFixture<MdPaginatorApp>;
-  let component: MdPaginatorApp;
-  let paginator: MdPaginator;
+describe('MatPaginator', () => {
+  let fixture: ComponentFixture<MatPaginatorApp>;
+  let component: MatPaginatorApp;
+  let paginator: MatPaginator;
 
   beforeEach(async(() => {
-    jasmine.addMatchers(customMatchers);
-
     TestBed.configureTestingModule({
       imports: [
-        MdPaginatorModule,
+        MatPaginatorModule,
         NoopAnimationsModule,
       ],
       declarations: [
-        MdPaginatorApp,
-        MdPaginatorWithoutPageSizeApp,
-        MdPaginatorWithoutOptionsApp,
+        MatPaginatorApp,
+        MatPaginatorWithoutPageSizeApp,
+        MatPaginatorWithoutOptionsApp,
+        MatPaginatorWithoutInputsApp,
       ],
-      providers: [MdPaginatorIntl]
+      providers: [MatPaginatorIntl]
     }).compileComponents();
+  }));
 
-    fixture = TestBed.createComponent(MdPaginatorApp);
+  beforeEach(() => {
+    fixture = TestBed.createComponent(MatPaginatorApp);
     component = fixture.componentInstance;
-    paginator = component.mdPaginator;
+    paginator = component.paginator;
 
     fixture.detectChanges();
-  }));
+  });
 
   describe('with the default internationalization provider', () => {
     it('should show the right range text', () => {
@@ -87,19 +87,27 @@ describe('MdPaginator', () => {
       const select = fixture.nativeElement.querySelector('.mat-select');
       expect(select.getAttribute('aria-label')).toBe('Items per page:');
 
-      const prevButton = fixture.nativeElement.querySelector('.mat-paginator-navigation-previous');
-      expect(prevButton.getAttribute('aria-label')).toBe('Previous page');
-
-      const nextButton = fixture.nativeElement.querySelector('.mat-paginator-navigation-next');
-      expect(nextButton.getAttribute('aria-label')).toBe('Next page');
+      expect(getPreviousButton(fixture).getAttribute('aria-label')).toBe('Previous page');
+      expect(getNextButton(fixture).getAttribute('aria-label')).toBe('Next page');
     });
+
+    it('should re-render when the i18n labels change',
+      inject([MatPaginatorIntl], (intl: MatPaginatorIntl) => {
+        const label = fixture.nativeElement.querySelector('.mat-paginator-page-size-label');
+
+        intl.itemsPerPageLabel = '1337 items per page';
+        intl.changes.next();
+        fixture.detectChanges();
+
+        expect(label.textContent).toBe('1337 items per page');
+      }));
   });
 
   describe('when navigating with the navigation buttons', () => {
     it('should be able to go to the next page', () => {
       expect(paginator.pageIndex).toBe(0);
 
-      component.clickNextButton();
+      dispatchMouseEvent(getNextButton(fixture), 'click');
 
       expect(paginator.pageIndex).toBe(1);
       expect(component.latestPageEvent ? component.latestPageEvent.pageIndex : null).toBe(1);
@@ -110,7 +118,7 @@ describe('MdPaginator', () => {
       fixture.detectChanges();
       expect(paginator.pageIndex).toBe(1);
 
-      component.clickPreviousButton();
+      dispatchMouseEvent(getPreviousButton(fixture), 'click');
 
       expect(paginator.pageIndex).toBe(0);
       expect(component.latestPageEvent ? component.latestPageEvent.pageIndex : null).toBe(0);
@@ -123,7 +131,7 @@ describe('MdPaginator', () => {
       expect(paginator.hasNextPage()).toBe(false);
 
       component.latestPageEvent = null;
-      component.clickNextButton();
+      dispatchMouseEvent(getNextButton(fixture), 'click');
 
       expect(component.latestPageEvent).toBe(null);
       expect(paginator.pageIndex).toBe(10);
@@ -134,19 +142,51 @@ describe('MdPaginator', () => {
       expect(paginator.hasPreviousPage()).toBe(false);
 
       component.latestPageEvent = null;
-      component.clickPreviousButton();
+      dispatchMouseEvent(getPreviousButton(fixture), 'click');
 
       expect(component.latestPageEvent).toBe(null);
       expect(paginator.pageIndex).toBe(0);
     });
   });
 
+  it('should mark for check when inputs are changed directly', () => {
+    const rangeElement = fixture.nativeElement.querySelector('.mat-paginator-range-label');
+
+    expect(rangeElement.innerText).toBe('1 - 10 of 100');
+
+    paginator.length = 99;
+    fixture.detectChanges();
+    expect(rangeElement.innerText).toBe('1 - 10 of 99');
+
+    paginator.pageSize = 6;
+    fixture.detectChanges();
+    expect(rangeElement.innerText).toBe('1 - 6 of 99');
+
+    paginator.pageIndex = 1;
+    fixture.detectChanges();
+    expect(rangeElement.innerText).toBe('7 - 12 of 99');
+
+    // Having one option and the same page size should remove the select menu
+    expect(fixture.nativeElement.querySelector('.mat-select')).not.toBeNull();
+    paginator.pageSize = 10;
+    paginator.pageSizeOptions = [10];
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mat-select')).toBeNull();
+  });
+
   it('should default the page size options to the page size if no options provided', () => {
-    const withoutOptionsAppFixture = TestBed.createComponent(MdPaginatorWithoutOptionsApp);
+    const withoutOptionsAppFixture = TestBed.createComponent(MatPaginatorWithoutOptionsApp);
     withoutOptionsAppFixture.detectChanges();
 
-    expect(withoutOptionsAppFixture.componentInstance.mdPaginator._displayedPageSizeOptions)
+    expect(withoutOptionsAppFixture.componentInstance.paginator._displayedPageSizeOptions)
         .toEqual([10]);
+  });
+
+  it('should default the page size to the first page size option if not provided', () => {
+    const withoutPageSizeAppFixture = TestBed.createComponent(MatPaginatorWithoutPageSizeApp);
+    withoutPageSizeAppFixture.detectChanges();
+
+    expect(withoutPageSizeAppFixture.componentInstance.paginator.pageSize).toEqual(10);
   });
 
   it('should show a sorted list of page size options including the current page size', () => {
@@ -213,17 +253,25 @@ describe('MdPaginator', () => {
   });
 });
 
+function getPreviousButton(fixture: ComponentFixture<any>) {
+  return fixture.nativeElement.querySelector('.mat-paginator-navigation-previous');
+}
+
+function getNextButton(fixture: ComponentFixture<any>) {
+  return fixture.nativeElement.querySelector('.mat-paginator-navigation-next');
+}
+
 @Component({
   template: `
-    <md-paginator [pageIndex]="pageIndex"
+    <mat-paginator [pageIndex]="pageIndex"
                   [pageSize]="pageSize"
                   [pageSizeOptions]="pageSizeOptions"
                   [length]="length"
                   (page)="latestPageEvent = $event">
-    </md-paginator>
+    </mat-paginator>
   `,
 })
-class MdPaginatorApp {
+class MatPaginatorApp {
   pageIndex = 0;
   pageSize = 10;
   pageSizeOptions = [5, 10, 25, 100];
@@ -231,20 +279,7 @@ class MdPaginatorApp {
 
   latestPageEvent: PageEvent | null;
 
-  @ViewChild(MdPaginator) mdPaginator: MdPaginator;
-
-  constructor(private _elementRef: ElementRef) { }
-
-  clickPreviousButton() {
-    const previousButton =
-        this._elementRef.nativeElement.querySelector('.mat-paginator-navigation-previous');
-    dispatchMouseEvent(previousButton, 'click');
-  }
-
-  clickNextButton() {
-    const nextButton =
-        this._elementRef.nativeElement.querySelector('.mat-paginator-navigation-next');
-    dispatchMouseEvent(nextButton, 'click');  }
+  @ViewChild(MatPaginator) paginator: MatPaginator;
 
   goToLastPage() {
     this.pageIndex = Math.ceil(this.length / this.pageSize);
@@ -253,27 +288,27 @@ class MdPaginatorApp {
 
 @Component({
   template: `
-    <md-paginator [length]="100"></md-paginator>
+    <mat-paginator></mat-paginator>
   `,
 })
-class MdPaginatorWithoutPageSizeOrOptionsApp {
-  @ViewChild(MdPaginator) mdPaginator: MdPaginator;
+class MatPaginatorWithoutInputsApp {
+  @ViewChild(MatPaginator) paginator: MatPaginator;
 }
 
 @Component({
   template: `
-    <md-paginator [pageSizeOptions]="[10, 20, 30]"></md-paginator>
+    <mat-paginator [pageSizeOptions]="[10, 20, 30]"></mat-paginator>
   `,
 })
-class MdPaginatorWithoutPageSizeApp {
-  @ViewChild(MdPaginator) mdPaginator: MdPaginator;
+class MatPaginatorWithoutPageSizeApp {
+  @ViewChild(MatPaginator) paginator: MatPaginator;
 }
 
 @Component({
   template: `
-    <md-paginator [pageSize]="10"></md-paginator>
+    <mat-paginator [pageSize]="10"></mat-paginator>
   `,
 })
-class MdPaginatorWithoutOptionsApp {
-  @ViewChild(MdPaginator) mdPaginator: MdPaginator;
+class MatPaginatorWithoutOptionsApp {
+  @ViewChild(MatPaginator) paginator: MatPaginator;
 }

@@ -6,10 +6,14 @@ import {Component, ViewEncapsulation} from '@angular/core';
   styleUrls: ['expansion-demo.css'],
   templateUrl: 'expansion-demo.html',
   encapsulation: ViewEncapsulation.None,
+  preserveWhitespaces: false,
 })
 export class ExpansionDemo {
   displayMode: string = 'default';
-  multi: boolean = false;
-  hideToggle: boolean = false;
+  multi = false;
+  hideToggle = false;
+  disabled = false;
   showPanel3 = true;
+  expandedHeight: string;
+  collapsedHeight: string;
 }

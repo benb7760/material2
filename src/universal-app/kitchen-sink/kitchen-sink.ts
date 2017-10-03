@@ -1,74 +1,105 @@
 import {Component, NgModule} from '@angular/core';
 import {ServerModule} from '@angular/platform-server';
 import {BrowserModule} from '@angular/platform-browser';
+import {Observable} from 'rxjs/Observable';
 import {
-  MdAutocompleteModule,
-  MdButtonModule,
-  MdButtonToggleModule,
-  MdCardModule,
-  MdCheckboxModule,
-  MdChipsModule,
-  MdDatepickerModule,
-  MdDialogModule,
-  MdGridListModule,
-  MdIconModule,
-  MdInputModule,
-  MdListModule,
-  MdMenuModule,
-  MdNativeDateModule,
-  MdProgressBarModule,
-  MdProgressSpinnerModule,
-  MdRadioModule,
-  MdRippleModule,
-  MdSelectModule,
-  MdSidenavModule,
-  MdSliderModule,
-  MdSlideToggleModule,
-  MdSnackBarModule,
-  MdTabsModule,
-  MdToolbarModule,
-  MdTooltipModule,
+  MatAutocompleteModule,
+  MatButtonModule,
+  MatCardModule,
+  MatChipsModule,
+  MatDatepickerModule,
+  MatDialogModule,
+  MatExpansionModule,
+  MatFormFieldModule,
+  MatGridListModule,
+  MatIconModule,
+  MatInputModule,
+  MatListModule,
+  MatMenuModule,
+  MatNativeDateModule,
+  MatPaginatorModule,
+  MatProgressBarModule,
+  MatProgressSpinnerModule,
+  MatRadioModule,
+  MatRippleModule,
+  MatSelectModule,
+  MatSidenavModule,
+  MatSliderModule,
+  MatSlideToggleModule,
+  MatSnackBarModule,
+  MatSortModule,
+  MatTableModule,
+  MatTabsModule,
+  MatToolbarModule,
+  MatTooltipModule,
 } from '@angular/material';
+import {
+  CdkTableModule,
+  DataSource
+} from '@angular/cdk/table';
 
+import 'rxjs/add/observable/of';
 
 @Component({
   selector: 'kitchen-sink',
   templateUrl: './kitchen-sink.html',
   styleUrls: ['./kitchen-sink.css'],
 })
-export class KitchenSink { }
+export class KitchenSink {
+
+  /** List of columns for the CDK and Material table. */
+  tableColumns = ['userId'];
+
+  /** Data source for the CDK and Material table. */
+  tableDataSource: DataSource<any> = {
+    connect: () => Observable.of([
+      { userId: 1 },
+      { userId: 2 }
+    ]),
+    disconnect: () => {}
+  };
+
+}
 
 
 @NgModule({
   imports: [
     BrowserModule.withServerTransition({appId: 'kitchen-sink'}),
-    MdAutocompleteModule,
-    MdButtonModule,
+    MatAutocompleteModule,
+    MatButtonModule,
     // Button toggle and checkbox can't work due to https://github.com/angular/angular/issues/17050
-    // MdButtonToggleModule,
-    MdCardModule,
-    // MdCheckboxModule,
-    MdChipsModule,
-    MdDatepickerModule,
-    MdDialogModule,
-    MdGridListModule,
-    MdIconModule,
-    MdInputModule,
-    MdListModule,
-    MdMenuModule,
-    MdNativeDateModule,
-    MdProgressBarModule,
-    MdProgressSpinnerModule,
-    MdRadioModule,
-    MdRippleModule,
-    MdSelectModule,
-    MdSidenavModule,
-    MdSliderModule,
-    MdSlideToggleModule,
-    MdSnackBarModule,
-    MdTabsModule,
-    MdToolbarModule,
-    MdTooltipModule,
+    // MatButtonToggleModule,
+    MatCardModule,
+    // MatCheckboxModule,
+    MatChipsModule,
+    MatDatepickerModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatGridListModule,
+    MatIconModule,
+    MatInputModule,
+    MatListModule,
+    MatMenuModule,
+    MatNativeDateModule,
+    MatPaginatorModule,
+    MatProgressBarModule,
+    MatProgressSpinnerModule,
+    MatRadioModule,
+    MatRippleModule,
+    MatSelectModule,
+    MatSidenavModule,
+    MatSliderModule,
+    MatSlideToggleModule,
+    MatSnackBarModule,
+    MatTabsModule,
+    MatToolbarModule,
+    MatTooltipModule,
+    MatExpansionModule,
+    MatSortModule,
+    MatTableModule,
+
+    // CDK Modules
+    CdkTableModule
   ],
   bootstrap: [KitchenSink],
   declarations: [KitchenSink],

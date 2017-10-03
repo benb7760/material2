@@ -1,22 +1,20 @@
 import {async, ComponentFixture, fakeAsync, TestBed, tick} from '@angular/core/testing';
-import {MdTabsModule} from '../index';
-import {MdTabNav} from './tab-nav-bar';
 import {Component, ViewChild} from '@angular/core';
 import {By} from '@angular/platform-browser';
-import {ViewportRuler} from '../../core/overlay/position/viewport-ruler';
-import {FakeViewportRuler} from '../../core/overlay/position/fake-viewport-ruler';
-import {dispatchFakeEvent, dispatchMouseEvent} from '../../core/testing/dispatch-events';
-import {Direction, Directionality} from '../../core/bidi/index';
+import {ViewportRuler} from '@angular/cdk/scrolling';
+import {dispatchFakeEvent, dispatchMouseEvent, FakeViewportRuler} from '@angular/cdk/testing';
+import {Direction, Directionality} from '@angular/cdk/bidi';
 import {Subject} from 'rxjs/Subject';
+import {MatTabNav, MatTabsModule, MatTabLink} from '../index';
 
 
-describe('MdTabNavBar', () => {
+describe('MatTabNavBar', () => {
   let dir: Direction = 'ltr';
   let dirChange = new Subject();
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [MdTabsModule],
+      imports: [MatTabsModule],
       declarations: [
         SimpleTabNavBarTestApp,
         TabLinkWithNgIf,
@@ -81,6 +79,20 @@ describe('MdTabNavBar', () => {
         .toBe(true, 'Expected aria-disabled to be set to "true" if link is disabled.');
     });
 
+    it('should update the disableRipple property on each tab link', () => {
+      const tabLinkElements = fixture.debugElement.queryAll(By.directive(MatTabLink))
+        .map(tabLinkDebug => tabLinkDebug.componentInstance) as MatTabLink[];
+
+      expect(tabLinkElements.every(tabLink => !tabLink.disableRipple))
+        .toBe(true, 'Expected every tab link to have ripples enabled');
+
+      fixture.componentInstance.disableRipple = true;
+      fixture.detectChanges();
+
+      expect(tabLinkElements.every(tabLink => tabLink.disableRipple))
+        .toBe(true, 'Expected every tab link to have ripples disabled');
+    });
+
     it('should update the tabindex if links are disabled', () => {
       const tabLinkElements = fixture.debugElement.queryAll(By.css('a'))
         .map(tabLinkDebugEl => tabLinkDebugEl.nativeElement);
@@ -103,6 +115,20 @@ describe('MdTabNavBar', () => {
 
       expect(tabLink.querySelectorAll('.mat-ripple-element').length)
         .toBe(1, 'Expected one ripple to show up if user clicks on tab link.');
+    });
+
+    it('should be able to disable ripples on a tab link', () => {
+      const tabLinkDebug = fixture.debugElement.query(By.css('a'));
+      const tabLinkElement = tabLinkDebug.nativeElement;
+      const tabLinkInstance = tabLinkDebug.injector.get(MatTabLink);
+
+      tabLinkInstance.disableRipple = true;
+
+      dispatchMouseEvent(tabLinkElement, 'mousedown');
+      dispatchMouseEvent(tabLinkElement, 'mouseup');
+
+      expect(tabLinkElement.querySelectorAll('.mat-ripple-element').length)
+        .toBe(0, 'Expected no ripple to show up if ripples are disabled.');
     });
 
     it('should re-align the ink bar when the direction changes', () => {
@@ -173,8 +199,8 @@ describe('MdTabNavBar', () => {
 @Component({
   selector: 'test-app',
   template: `
-    <nav md-tab-nav-bar>
-      <a md-tab-link
+    <nav mat-tab-nav-bar [disableRipple]="disableRipple">
+      <a mat-tab-link
          *ngFor="let tab of tabs; let index = index"
          [active]="activeIndex === index"
          [disabled]="disabled"
@@ -185,10 +211,11 @@ describe('MdTabNavBar', () => {
   `
 })
 class SimpleTabNavBarTestApp {
-  @ViewChild(MdTabNav) tabNavBar: MdTabNav;
+  @ViewChild(MatTabNav) tabNavBar: MatTabNav;
 
   label = '';
   disabled: boolean = false;
+  disableRipple: boolean = false;
   tabs = [0, 1, 2];
 
   activeIndex = 0;
@@ -196,8 +223,8 @@ class SimpleTabNavBarTestApp {
 
 @Component({
   template: `
-    <nav md-tab-nav-bar>
-      <a md-tab-link *ngIf="!isDestroyed">Link</a>
+    <nav mat-tab-nav-bar>
+      <a mat-tab-link *ngIf="!isDestroyed">Link</a>
     </nav>
   `
 })

@@ -8,7 +8,6 @@
 
 import {
   Component,
-  HostBinding,
   ChangeDetectionStrategy,
   OnDestroy,
   Input,
@@ -17,8 +16,9 @@ import {
   Renderer2,
   Directive,
   ViewChild,
+  ViewEncapsulation,
 } from '@angular/core';
-import {CanColor, mixinColor} from '../core/common-behaviors/color';
+import {CanColor, mixinColor} from '@angular/material/core';
 
 
 // TODO(josephperrott): Benchpress tests.
@@ -51,35 +51,40 @@ type EasingFn = (currentTime: number, startValue: number,
  * @docs-private
  */
 @Directive({
-  selector: 'md-progress-spinner, mat-progress-spinner',
+  selector: 'mat-progress-spinner',
   host: {'class': 'mat-progress-spinner'}
 })
-export class MdProgressSpinnerCssMatStyler {}
+export class MatProgressSpinnerCssMatStyler {}
 
-// Boilerplate for applying mixins to MdProgressSpinner.
+// Boilerplate for applying mixins to MatProgressSpinner.
 /** @docs-private */
-export class MdProgressSpinnerBase {
+export class MatProgressSpinnerBase {
   constructor(public _renderer: Renderer2, public _elementRef: ElementRef) {}
 }
-export const _MdProgressSpinnerMixinBase = mixinColor(MdProgressSpinnerBase, 'primary');
+export const _MatProgressSpinnerMixinBase = mixinColor(MatProgressSpinnerBase, 'primary');
 
 /**
- * <md-progress-spinner> component.
+ * <mat-progress-spinner> component.
  */
 @Component({
   moduleId: module.id,
-  selector: 'md-progress-spinner, mat-progress-spinner',
+  selector: 'mat-progress-spinner',
   host: {
     'role': 'progressbar',
+    'class': 'mat-progress-spinner',
     '[attr.aria-valuemin]': '_ariaValueMin',
-    '[attr.aria-valuemax]': '_ariaValueMax'
+    '[attr.aria-valuemax]': '_ariaValueMax',
+    '[attr.aria-valuenow]': 'value',
+    '[attr.mode]': 'mode',
   },
   inputs: ['color'],
   templateUrl: 'progress-spinner.html',
   styleUrls: ['progress-spinner.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
+  preserveWhitespaces: false,
 })
-export class MdProgressSpinner extends _MdProgressSpinnerMixinBase
+export class MatProgressSpinner extends _MatProgressSpinnerMixinBase
     implements OnDestroy, CanColor {
 
   /** The id of the last requested animation. */
@@ -132,7 +137,6 @@ export class MdProgressSpinner extends _MdProgressSpinnerMixinBase
 
   /** Value of the progress circle. It is bound to the host as the attribute aria-valuenow. */
   @Input()
-  @HostBinding('attr.aria-valuenow')
   get value() {
     if (this.mode == 'determinate') {
       return this._value;
@@ -154,11 +158,8 @@ export class MdProgressSpinner extends _MdProgressSpinnerMixinBase
    * Input must be one of the values from ProgressMode, defaults to 'determinate'.
    * mode is bound to the host as the attribute host.
    */
-  @HostBinding('attr.mode')
   @Input()
-  get mode() {
-    return this._mode;
-  }
+  get mode() { return this._mode; }
   set mode(mode: ProgressSpinnerMode) {
     if (mode !== this._mode) {
       if (mode === 'indeterminate') {
@@ -271,34 +272,30 @@ export class MdProgressSpinner extends _MdProgressSpinnerMixinBase
 
 
 /**
- * <md-spinner> component.
+ * <mat-spinner> component.
  *
  * This is a component definition to be used as a convenience reference to create an
- * indeterminate <md-progress-spinner> instance.
+ * indeterminate <mat-progress-spinner> instance.
  */
 @Component({
   moduleId: module.id,
-  selector: 'md-spinner, mat-spinner',
+  selector: 'mat-spinner',
   host: {
     'role': 'progressbar',
     'mode': 'indeterminate',
-    'class': 'mat-spinner',
+    'class': 'mat-spinner mat-progress-spinner',
   },
   inputs: ['color'],
   templateUrl: 'progress-spinner.html',
   styleUrls: ['progress-spinner.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
+  preserveWhitespaces: false,
 })
-export class MdSpinner extends MdProgressSpinner implements OnDestroy {
-
+export class MatSpinner extends MatProgressSpinner {
   constructor(elementRef: ElementRef, ngZone: NgZone, renderer: Renderer2) {
     super(renderer, elementRef, ngZone);
     this.mode = 'indeterminate';
-  }
-
-  ngOnDestroy() {
-    // The `ngOnDestroy` from `MdProgressSpinner` should be called explicitly, because
-    // in certain cases Angular won't call it (e.g. when using AoT and in unit tests).
-    super.ngOnDestroy();
   }
 }
 

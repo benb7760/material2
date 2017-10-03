@@ -6,10 +6,25 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {InjectionToken, LOCALE_ID} from '@angular/core';
+import {Observable} from 'rxjs/Observable';
+import {Subject} from 'rxjs/Subject';
+
+
+/** InjectionToken for datepicker that can be used to override default locale code. */
+export const MAT_DATE_LOCALE = new InjectionToken<string>('MAT_DATE_LOCALE');
+
+/** Provider for MAT_DATE_LOCALE injection token. */
+export const MAT_DATE_LOCALE_PROVIDER = {provide: MAT_DATE_LOCALE, useExisting: LOCALE_ID};
+
 /** Adapts type `D` to be usable as a date by cdk-based components that work with dates. */
 export abstract class DateAdapter<D> {
   /** The locale to use for all dates. */
   protected locale: any;
+
+  /** A stream that emits when the locale changes. */
+  get localeChanges(): Observable<void> { return this._localeChanges; }
+  protected _localeChanges= new Subject<void>();
 
   /**
    * Gets the year component of the given date.
@@ -107,15 +122,15 @@ export abstract class DateAdapter<D> {
    * @param value The value to parse.
    * @param parseFormat The expected format of the value being parsed
    *     (type is implementation-dependent).
-   * @returns The parsed date, or null if date could not be parsed.
+   * @returns The parsed date.
    */
   abstract parse(value: any, parseFormat: any): D | null;
 
   /**
    * Formats a date as a string.
-   * @param date The value to parse.
+   * @param date The value to format.
    * @param displayFormat The format to use to display the date as a string.
-   * @returns The parsed date, or null if date could not be parsed.
+   * @returns The formatted date string.
    */
   abstract format(date: D, displayFormat: any): string;
 
@@ -149,12 +164,32 @@ export abstract class DateAdapter<D> {
   abstract addCalendarDays(date: D, days: number): D;
 
   /**
-   * Gets the RFC 3339 compatible date string (https://tools.ietf.org/html/rfc3339)  for the given
-   * date.
+   * Gets the RFC 3339 compatible string (https://tools.ietf.org/html/rfc3339) for the given date.
    * @param date The date to get the ISO date string for.
    * @returns The ISO date string date string.
    */
-  abstract getISODateString(date: D): string;
+  abstract toIso8601(date: D): string;
+
+  /**
+   * Creates a date from an RFC 3339 compatible string (https://tools.ietf.org/html/rfc3339).
+   * @param iso8601String The ISO date string to create a date from
+   * @returns The date created from the ISO date string.
+   */
+  abstract fromIso8601(iso8601String: string): D | null;
+
+  /**
+   * Checks whether the given object is considered a date instance by this DateAdapter.
+   * @param obj The object to check
+   * @returns Whether the object is a date instance.
+   */
+  abstract isDateInstance(obj: any): boolean;
+
+  /**
+   * Checks whether the given date is valid.
+   * @param date The date to check.
+   * @returns Whether the date is valid.
+   */
+  abstract isValid(date: D): boolean;
 
   /**
    * Sets the locale used for all dates.
@@ -162,6 +197,7 @@ export abstract class DateAdapter<D> {
    */
   setLocale(locale: any) {
     this.locale = locale;
+    this._localeChanges.next();
   }
 
   /**

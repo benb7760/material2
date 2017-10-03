@@ -1,15 +1,15 @@
 import {TestBed, async} from '@angular/core/testing';
 import {Component} from '@angular/core';
 import {By} from '@angular/platform-browser';
-import {MdProgressSpinnerModule} from './index';
+import {MatProgressSpinnerModule} from './index';
 import {PROGRESS_SPINNER_STROKE_WIDTH} from './progress-spinner';
 
 
-describe('MdProgressSpinner', () => {
+describe('MatProgressSpinner', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [MdProgressSpinnerModule],
+      imports: [MatProgressSpinnerModule],
       declarations: [
         BasicProgressSpinner,
         IndeterminateProgressSpinner,
@@ -27,17 +27,17 @@ describe('MdProgressSpinner', () => {
 
   it('should apply a mode of "determinate" if no mode is provided.', () => {
     let fixture = TestBed.createComponent(BasicProgressSpinner);
-      fixture.detectChanges();
+    fixture.detectChanges();
 
-      let progressElement = fixture.debugElement.query(By.css('md-progress-spinner'));
-      expect(progressElement.componentInstance.mode).toBe('determinate');
+    let progressElement = fixture.debugElement.query(By.css('mat-progress-spinner'));
+    expect(progressElement.componentInstance.mode).toBe('determinate');
   });
 
   it('should not modify the mode if a valid mode is provided.', () => {
     let fixture = TestBed.createComponent(IndeterminateProgressSpinner);
     fixture.detectChanges();
 
-    let progressElement = fixture.debugElement.query(By.css('md-progress-spinner'));
+    let progressElement = fixture.debugElement.query(By.css('mat-progress-spinner'));
     expect(progressElement.componentInstance.mode).toBe('indeterminate');
   });
 
@@ -45,13 +45,13 @@ describe('MdProgressSpinner', () => {
     let fixture = TestBed.createComponent(BasicProgressSpinner);
     fixture.detectChanges();
 
-    let progressElement = fixture.debugElement.query(By.css('md-progress-spinner'));
+    let progressElement = fixture.debugElement.query(By.css('mat-progress-spinner'));
     expect(progressElement.componentInstance.value).toBeUndefined();
   });
 
   it('should set the value to 0 when the mode is set to indeterminate', () => {
     let fixture = TestBed.createComponent(ProgressSpinnerWithValueAndBoundMode);
-    let progressElement = fixture.debugElement.query(By.css('md-progress-spinner'));
+    let progressElement = fixture.debugElement.query(By.css('mat-progress-spinner'));
     fixture.componentInstance.mode = 'determinate';
     fixture.detectChanges();
 
@@ -65,7 +65,7 @@ describe('MdProgressSpinner', () => {
     let fixture = TestBed.createComponent(BasicProgressSpinner);
     fixture.detectChanges();
 
-    let progressElement = fixture.debugElement.query(By.css('md-progress-spinner'));
+    let progressElement = fixture.debugElement.query(By.css('mat-progress-spinner'));
     let progressComponent = progressElement.componentInstance;
 
     progressComponent.value = 50;
@@ -88,7 +88,7 @@ describe('MdProgressSpinner', () => {
     let fixture = TestBed.createComponent(IndeterminateProgressSpinnerWithNgIf);
     fixture.detectChanges();
 
-    let progressElement = fixture.debugElement.query(By.css('md-progress-spinner'));
+    let progressElement = fixture.debugElement.query(By.css('mat-progress-spinner'));
     expect(progressElement.componentInstance.interdeterminateInterval).toBeTruthy();
 
     fixture.componentInstance.isHidden = true;
@@ -100,7 +100,7 @@ describe('MdProgressSpinner', () => {
     let fixture = TestBed.createComponent(SpinnerWithNgIf);
     fixture.detectChanges();
 
-    let progressElement = fixture.debugElement.query(By.css('md-spinner'));
+    let progressElement = fixture.debugElement.query(By.css('mat-spinner'));
 
     expect(progressElement.componentInstance.interdeterminateInterval).toBeTruthy();
 
@@ -131,11 +131,11 @@ describe('MdProgressSpinner', () => {
       .toBe(40, 'Expected the custom stroke width to be applied to the path element.');
   });
 
-  it('should set the color class on the md-spinner', () => {
+  it('should set the color class on the mat-spinner', () => {
     let fixture = TestBed.createComponent(SpinnerWithColor);
     fixture.detectChanges();
 
-    let progressElement = fixture.debugElement.query(By.css('md-spinner'));
+    let progressElement = fixture.debugElement.query(By.css('mat-spinner'));
 
     expect(progressElement.nativeElement.classList).toContain('mat-primary');
 
@@ -146,11 +146,11 @@ describe('MdProgressSpinner', () => {
     expect(progressElement.nativeElement.classList).not.toContain('mat-primary');
   });
 
-  it('should set the color class on the md-progress-spinner', () => {
+  it('should set the color class on the mat-progress-spinner', () => {
     let fixture = TestBed.createComponent(ProgressSpinnerWithColor);
     fixture.detectChanges();
 
-    let progressElement = fixture.debugElement.query(By.css('md-progress-spinner'));
+    let progressElement = fixture.debugElement.query(By.css('mat-progress-spinner'));
 
     expect(progressElement.nativeElement.classList).toContain('mat-primary');
 
@@ -163,7 +163,7 @@ describe('MdProgressSpinner', () => {
 
   it('should re-render the circle when switching from indeterminate to determinate mode', () => {
     let fixture = TestBed.createComponent(ProgressSpinnerWithValueAndBoundMode);
-    let progressElement = fixture.debugElement.query(By.css('md-progress-spinner')).nativeElement;
+    let progressElement = fixture.debugElement.query(By.css('mat-progress-spinner')).nativeElement;
 
     fixture.componentInstance.mode = 'indeterminate';
     fixture.detectChanges();
@@ -178,32 +178,40 @@ describe('MdProgressSpinner', () => {
         .toBe(oldDimesions, 'Expected circle dimensions to have changed.');
   });
 
+  it('should remove the underlying SVG element from the tab order explicitly', () => {
+    const fixture = TestBed.createComponent(BasicProgressSpinner);
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('svg').getAttribute('focusable')).toBe('false');
+  });
+
 });
 
 
-@Component({template: '<md-progress-spinner></md-progress-spinner>'})
+@Component({template: '<mat-progress-spinner></mat-progress-spinner>'})
 class BasicProgressSpinner {}
 
-@Component({template: '<md-progress-spinner [strokeWidth]="strokeWidth"></md-progress-spinner>'})
+@Component({template: '<mat-progress-spinner [strokeWidth]="strokeWidth"></mat-progress-spinner>'})
 class ProgressSpinnerCustomStrokeWidth {
   strokeWidth: number;
 }
 
-@Component({template: '<md-progress-spinner mode="indeterminate"></md-progress-spinner>'})
+@Component({template: '<mat-progress-spinner mode="indeterminate"></mat-progress-spinner>'})
 class IndeterminateProgressSpinner { }
 
-@Component({template: '<md-progress-spinner value="50" [mode]="mode"></md-progress-spinner>'})
+@Component({template: '<mat-progress-spinner value="50" [mode]="mode"></mat-progress-spinner>'})
 class ProgressSpinnerWithValueAndBoundMode { mode = 'indeterminate'; }
 
 @Component({template: `
-    <md-progress-spinner mode="indeterminate" *ngIf="!isHidden"></md-progress-spinner>`})
+    <mat-progress-spinner mode="indeterminate" *ngIf="!isHidden"></mat-progress-spinner>`})
 class IndeterminateProgressSpinnerWithNgIf { isHidden = false; }
 
-@Component({template: `<md-spinner *ngIf="!isHidden"></md-spinner>`})
+@Component({template: `<mat-spinner *ngIf="!isHidden"></mat-spinner>`})
 class SpinnerWithNgIf { isHidden = false; }
 
-@Component({template: `<md-spinner [color]="color"></md-spinner>`})
+@Component({template: `<mat-spinner [color]="color"></mat-spinner>`})
 class SpinnerWithColor { color: string = 'primary'; }
 
-@Component({template: `<md-progress-spinner value="50" [color]="color"></md-progress-spinner>`})
+@Component({template: `<mat-progress-spinner value="50" [color]="color"></mat-progress-spinner>`})
 class ProgressSpinnerWithColor { color: string = 'primary'; }
