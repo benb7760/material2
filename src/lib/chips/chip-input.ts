@@ -23,6 +23,7 @@ export interface MatChipInputEvent {
  */
 @Directive({
   selector: 'input[matChipInputFor]',
+  exportAs: 'matChipInput, matChipInputFor',
   host: {
     'class': 'mat-chip-input mat-input-element',
     '(keydown)': '_keydown($event)',
@@ -48,7 +49,7 @@ export class MatChipInput {
    */
   @Input('matChipInputAddOnBlur')
   get addOnBlur() { return this._addOnBlur; }
-  set addOnBlur(value) { this._addOnBlur = coerceBooleanProperty(value); }
+  set addOnBlur(value: boolean) { this._addOnBlur = coerceBooleanProperty(value); }
   _addOnBlur: boolean = false;
 
   /**

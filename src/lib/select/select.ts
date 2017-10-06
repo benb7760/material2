@@ -45,7 +45,13 @@ import {
   ViewChild,
   ViewEncapsulation,
 } from '@angular/core';
-import {ControlValueAccessor, FormGroupDirective, NgControl, NgForm} from '@angular/forms';
+import {
+  ControlValueAccessor,
+  FormGroupDirective,
+  NgControl,
+  NgForm,
+  FormControl
+} from '@angular/forms';
 import {
   CanDisable,
   HasTabIndex,
@@ -54,6 +60,7 @@ import {
   MatOptionSelectionChange,
   mixinDisabled,
   mixinTabIndex,
+  ErrorStateMatcher,
 } from '@angular/material/core';
 import {MatFormField, MatFormFieldControl} from '@angular/material/form-field';
 import {Observable} from 'rxjs/Observable';
@@ -146,6 +153,7 @@ export class MatSelectTrigger {}
 @Component({
   moduleId: module.id,
   selector: 'mat-select',
+  exportAs: 'matSelect',
   templateUrl: 'select.html',
   styleUrls: ['select.css'],
   inputs: ['disabled', 'tabIndex'],
@@ -178,7 +186,6 @@ export class MatSelectTrigger {}
     fadeInContent
   ],
   providers: [{provide: MatFormFieldControl, useExisting: MatSelect}],
-  exportAs: 'matSelect',
 })
 export class MatSelect extends _MatSelectMixinBase implements AfterContentInit, OnDestroy, OnInit,
     ControlValueAccessor, CanDisable, HasTabIndex, MatFormFieldControl<any> {
@@ -377,6 +384,9 @@ export class MatSelect extends _MatSelectMixinBase implements AfterContentInit, 
   /** Input that can be used to specify the `aria-labelledby` attribute. */
   @Input('aria-labelledby') ariaLabelledby: string;
 
+  /** An object used to control when error messages are shown. */
+  @Input() errorStateMatcher: ErrorStateMatcher;
+
   /** Unique id of the element. */
   @Input()
   get id() { return this._id; }
@@ -411,6 +421,7 @@ export class MatSelect extends _MatSelectMixinBase implements AfterContentInit, 
     private _viewportRuler: ViewportRuler,
     private _changeDetectorRef: ChangeDetectorRef,
     private _ngZone: NgZone,
+    private _defaultErrorStateMatcher: ErrorStateMatcher,
     renderer: Renderer2,
     elementRef: ElementRef,
     @Optional() private _dir: Directionality,
@@ -680,12 +691,11 @@ export class MatSelect extends _MatSelectMixinBase implements AfterContentInit, 
 
   /** Whether the select is in an error state. */
   get errorState(): boolean {
-    const isInvalid = this.ngControl && this.ngControl.invalid;
-    const isTouched = this.ngControl && this.ngControl.touched;
-    const isSubmitted = (this._parentFormGroup && this._parentFormGroup.submitted) ||
-        (this._parentForm && this._parentForm.submitted);
+    const parent = this._parentFormGroup || this._parentForm;
+    const matcher = this.errorStateMatcher || this._defaultErrorStateMatcher;
+    const control = this.ngControl ? this.ngControl.control as FormControl : null;
 
-    return !!(isInvalid && (isTouched || isSubmitted));
+    return matcher.isErrorState(control, parent);
   }
 
   private _initializeSelection(): void {
@@ -1202,5 +1212,5 @@ export class MatSelect extends _MatSelectMixinBase implements AfterContentInit, 
   }
 
   // Implemented as part of MatFormFieldControl.
-  get shouldPlaceholderFloat() { return this._panelOpen || !this.empty; }
+  get shouldPlaceholderFloat(): boolean { return this._panelOpen || !this.empty; }
 }
