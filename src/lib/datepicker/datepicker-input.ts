@@ -61,7 +61,11 @@ export class MatDatepickerInputEvent<D> {
   /** The new value for the target datepicker input. */
   value: D | null;
 
-  constructor(public target: MatDatepickerInput<D>, public targetElement: HTMLElement) {
+  constructor(
+    /** Reference to the datepicker input component that emitted the event. */
+    public target: MatDatepickerInput<D>,
+    /** Reference to the native input element associated with the datepicker input. */
+    public targetElement: HTMLElement) {
     this.value = this.target.value;
   }
 }
@@ -104,7 +108,9 @@ export class MatDatepickerInput<D> implements AfterContentInit, ControlValueAcce
     }
   }
 
-  @Input() set matDatepickerFilter(filter: (date: D | null) => boolean) {
+  /** Function that can be used to filter out dates within the datepicker. */
+  @Input()
+  set matDatepickerFilter(filter: (date: D | null) => boolean) {
     this._dateFilter = filter;
     this._validatorOnChange();
   }
@@ -271,6 +277,14 @@ export class MatDatepickerInput<D> implements AfterContentInit, ControlValueAcce
    */
   getPopupConnectionElementRef(): ElementRef {
     return this._formField ? this._formField.underlineRef : this._elementRef;
+  }
+
+  /**
+   * Determines the offset to be used when the calendar goes into a fallback position.
+   * Primarily used to prevent the calendar from overlapping the input.
+   */
+  _getPopupFallbackOffset(): number {
+    return this._formField ? -this._formField._inputContainerRef.nativeElement.clientHeight : 0;
   }
 
   // Implemented as part of ControlValueAccessor
